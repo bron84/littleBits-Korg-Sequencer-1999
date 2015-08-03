@@ -8,6 +8,7 @@ const int analogProgrammerValuePin = 9;
 
 const int programState = 1;
 const int sequenceState = 2;
+const int sequence2State = 3;
 const int metronomeState = 0;
 
 
@@ -27,10 +28,10 @@ int sequencerProgramHighestPosition;
 int sequencerPlayPosition;
 boolean resetSequencerOnNextProgram = false;
 
-int currentSequence = 0;
-int currentSequenceAnalog;
-boolean currentSequenceCanTrack = false;
-int currentSequencePosition = 0;
+int currentSequence[2] = {0, 0};
+int currentSequenceAnalog[2];
+boolean currentSequenceCanTrack[2];
+int currentSequencePosition[2];
 int sequences[5][16] = {
   {1},
   {1, 1, 1, 0},
@@ -76,7 +77,7 @@ void stateButtonHandler() {
       lastStateButtonPress = millis();
       
       stateButtonValue++;
-      if (stateButtonValue >= 3) {
+      if (stateButtonValue >= 4) {
         stateButtonValue = 0;
       }
       if (stateButtonValue != programState) {
@@ -85,9 +86,10 @@ void stateButtonHandler() {
       if (stateButtonValue == metronomeState) {
           metronomeCanTrack = false;
       } else if (stateButtonValue == sequenceState) {
-          currentSequenceCanTrack = false;
+          currentSequenceCanTrack[0] = false;
+      } else if (stateButtonValue == sequence2State) {
+          currentSequenceCanTrack[1] = false;
       }
-      
     }
   }
   stateButtonStatus = tmpButtonState;
@@ -132,7 +134,9 @@ void stateValueHandler() {
   if (stateButtonValue == metronomeState) {
     metronomeSpeed();
   } else if (stateButtonValue == sequenceState) {
-    sequenceNumber();
+    sequenceNumber(0);
+  } else if (stateButtonValue == sequence2State) {
+    sequenceNumber(1);
   }
 }
 
@@ -148,15 +152,15 @@ void metronomeSpeed() {
   }
 }
 
-void sequenceNumber() {
-  int diff = abs(currentSequenceAnalog - programmerValue);
+void sequenceNumber(int number) {
+  int diff = abs(currentSequenceAnalog[number] - programmerValue);
   if (diff < 20) {
-    currentSequenceCanTrack = true;
+    currentSequenceCanTrack[number] = true;
   }
   
-  if (currentSequenceCanTrack) {
-    currentSequenceAnalog = programmerValue;
-    currentSequence = map(currentSequenceAnalog, 0, 1020, 0, numberOfSequences - 1); 
+  if (currentSequenceCanTrack[number]) {
+    currentSequenceAnalog[number] = programmerValue;
+    currentSequence[number] = map(currentSequenceAnalog[number], 0, 1020, 0, numberOfSequences - 1); 
   }
 }
 
@@ -169,14 +173,24 @@ void triggerMetronome() {
   if (metronomePlaying) {
     int diffMillis = millis() - lastMillis;
     if (diffMillis > metronomeMS) {
-      if (currentSequencePosition >= sequencesLength[currentSequence]) {
-        currentSequencePosition = 0;
+      if (currentSequencePosition[0] >= sequencesLength[currentSequence[0]]) {
+        currentSequencePosition[0] = 0;
       }
 
-      if (sequences[currentSequence][currentSequencePosition]) {
+      if (sequences[currentSequence[0]][currentSequencePosition[0]]) {
         triggerSequencerBeat();
       }
-      currentSequencePosition++;
+      currentSequencePosition[0]++;
+
+      if (currentSequencePosition[1] >= sequencesLength[currentSequence[1]]) {
+        currentSequencePosition[1] = 0;
+      }
+
+      if (sequences[currentSequence[1]][currentSequencePosition[1]]) {
+        digitalWrite(digitalBeatPin, HIGH);
+        triggerBeatOff = millis() + 10;  
+      }
+      currentSequencePosition[1]++;      
 
       lastMillis = millis();
     }
@@ -184,14 +198,14 @@ void triggerMetronome() {
 }
 
 void triggerSequencerBeat() {
-      digitalWrite(digitalBeatPin, HIGH);
+      
 
       analogWrite(analogProgrammerValuePin, sequencer[sequencerPlayPosition]);
       sequencerPlayPosition++;
       if (sequencerPlayPosition > sequencerProgramHighestPosition) {
         sequencerPlayPosition = 0;
       }
-      triggerBeatOff = millis() + 10;  
+      
 }
   
 
