@@ -32,15 +32,16 @@ int currentSequence[2] = {0, 0};
 int currentSequenceAnalog[2];
 boolean currentSequenceCanTrack[2];
 int currentSequencePosition[2];
-int sequences[5][16] = {
+int sequences[6][16] = {
   {1},
   {1, 1, 1, 0},
   {1, 0, 1, 0},
   {1, 1, 0, 1, 1},
-  {1, 1, 1, 0, 1, 1, 0}
+  {1, 1, 1, 0, 1, 1, 0},
+  {1, 0, 0}
 };
-int sequencesLength[5] = {1, 4, 4, 5, 7};
-int numberOfSequences = 5;
+int sequencesLength[6] = {1, 4, 4, 5, 7, 3};
+int numberOfSequences = 6;
 
 
 boolean metronomePlaying = false;
