@@ -6,6 +6,11 @@ const int digitalBeatPin = 1;
 const int analogProgrammerStatePin = 5;
 const int analogProgrammerValuePin = 9;
 
+const int programState = 1;
+const int sequenceState = 2;
+const int metronomeState = 0;
+
+
 int stateButtonStatus = 0;
 int stateButtonValue = 0;
 unsigned long lastStateButtonPress;
@@ -71,15 +76,15 @@ void stateButtonHandler() {
       lastStateButtonPress = millis();
       
       stateButtonValue++;
-      if (stateButtonValue >= 5) {
+      if (stateButtonValue >= 3) {
         stateButtonValue = 0;
       }
-      if (stateButtonValue != 1) {
+      if (stateButtonValue != programState) {
         resetSequencerOnNextProgram = true;
       }
-      if (stateButtonValue == 3) {
+      if (stateButtonValue == metronomeState) {
           metronomeCanTrack = false;
-      } else if (stateButtonValue == 2) {
+      } else if (stateButtonValue == sequenceState) {
           currentSequenceCanTrack = false;
       }
       
@@ -97,7 +102,7 @@ void stateProgrammerHandler() {
       lastProgrammerButtonPress = millis();
       
       switch (stateButtonValue) {
-        case 1:
+        case programState:
           if (resetSequencerOnNextProgram) {
             sequencerProgramPosition = 0;
             sequencerProgramHighestPosition = 0;
@@ -112,7 +117,7 @@ void stateProgrammerHandler() {
           sequencerProgramPosition++;
 
           break;
-        case 3:
+        case metronomeState:
           metronomeToggle();
           break;
       }
@@ -124,9 +129,9 @@ void stateProgrammerHandler() {
 void stateValueHandler() {
    programmerValue = analogRead(programmerValueButtonPin);
 
-  if (stateButtonValue == 3) {
+  if (stateButtonValue == metronomeState) {
     metronomeSpeed();
-  } else if (stateButtonValue == 2) {
+  } else if (stateButtonValue == sequenceState) {
     sequenceNumber();
   }
 }
@@ -169,7 +174,6 @@ void triggerMetronome() {
       }
 
       if (sequences[currentSequence][currentSequencePosition]) {
-        Serial.println("trigger step");
         triggerSequencerBeat();
       }
       currentSequencePosition++;
