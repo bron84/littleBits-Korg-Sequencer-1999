@@ -8,11 +8,11 @@ const int analogProgrammerValuePin = 9;
 
 int stateButtonStatus = 0;
 int stateButtonValue = 0;
-int lastStateButtonPress;
+unsigned long lastStateButtonPress;
 
 int programmerButtonStatus = 0;
 int programmerButtonValue = 0;
-int lastProgrammerButtonPress;
+unsigned long lastProgrammerButtonPress;
 
 int programmerValue = 0;
 
@@ -23,9 +23,11 @@ int sequencerPlayPosition;
 boolean resetSequencerOnNextProgram = false;
 
 boolean metronomePlaying = false;
-int metronomeMS = 500;
-int lastMillis;
-int triggerBeatOff;
+boolean metronomeCanTrack = false;
+int metronomeMSAnalog;
+unsigned long metronomeMS = 500;
+unsigned long lastMillis;
+unsigned long triggerBeatOff;
 
 void setup() {
   Serial.begin(9600);
@@ -43,6 +45,7 @@ void loop() {
   stateButtonHandler();
   stateProgrammerHandler();
   triggerMetronome();
+  triggerMetronomeBeatOff();
 }
 
 void stateButtonHandler() {
@@ -59,6 +62,10 @@ void stateButtonHandler() {
       if (stateButtonValue != 1) {
         resetSequencerOnNextProgram = true;
       }
+      if (stateButtonValue == 3) {
+          metronomeCanTrack = false;
+      }
+      
     }
   }
   stateButtonStatus = tmpButtonState;
@@ -106,7 +113,15 @@ void stateValueHandler() {
 }
 
 void metronomeSpeed() {
-  metronomeMS = map(programmerValue, 0, 1023, 1000, 100);
+  int diff = abs(metronomeMSAnalog - programmerValue);
+  if (diff < 20) {
+    metronomeCanTrack = true;
+  }
+
+  if (metronomeCanTrack) {
+    metronomeMSAnalog = programmerValue;
+    metronomeMS = map(metronomeMSAnalog, 0, 1023, 1000, 100);
+  }
 }
 
 void metronomeToggle() {
@@ -133,8 +148,9 @@ void triggerMetronome() {
 }
 
 void triggerMetronomeBeatOff() {
-  if (triggerBeatOff > -1 && triggerBeatOff < millis()) {
+  
+  if (triggerBeatOff > 0 && triggerBeatOff < millis()) {
     digitalWrite(digitalBeatPin, LOW); 
-    triggerBeatOff = -1;
+    triggerBeatOff = 0;
   }
 }
