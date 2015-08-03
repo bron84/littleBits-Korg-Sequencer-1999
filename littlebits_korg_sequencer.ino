@@ -22,6 +22,17 @@ int sequencerProgramHighestPosition;
 int sequencerPlayPosition;
 boolean resetSequencerOnNextProgram = false;
 
+int currentSequence = 0;
+int currentSequencePosition = 0;
+int sequences[5][16] = {
+  {1},
+  {1, 1, 1, 0},
+  {1, 0, 1, 0},
+  {1, 1, 0, 1, 1},
+  {1, 1, 1, 0, 1, 1, 0}
+};
+int sequencesLength[5] = {1, 4, 4, 5, 7};
+
 boolean metronomePlaying = false;
 int metronomeMS = 500;
 int lastMillis;
@@ -43,6 +54,7 @@ void loop() {
   stateButtonHandler();
   stateProgrammerHandler();
   triggerMetronome();
+  triggerMetronomeBeatOff();
 }
 
 void stateButtonHandler() {
@@ -70,6 +82,7 @@ void stateProgrammerHandler() {
 
   if (programmerButtonStatus != tmpButtonState) {
     if (tmpButtonState == HIGH && (millis() - lastProgrammerButtonPress > 100)) {
+      
       lastProgrammerButtonPress = millis();
       
       switch (stateButtonValue) {
@@ -102,7 +115,9 @@ void stateValueHandler() {
 
   if (stateButtonValue == 3) {
     metronomeSpeed();
-  }   
+  } else if (stateButtonValue == 2) {
+    currentSequence = map(programmerValue, 0, 1020, 0, 3);
+  }
 }
 
 void metronomeSpeed() {
@@ -119,22 +134,39 @@ void triggerMetronome() {
   if (metronomePlaying) {
     int diffMillis = millis() - lastMillis;
     if (diffMillis > metronomeMS) {
-      digitalWrite(digitalBeatPin, HIGH);
-
-      analogWrite(analogProgrammerValuePin, sequencer[sequencerPlayPosition]);
-      sequencerPlayPosition++;
-      if (sequencerPlayPosition > sequencerProgramHighestPosition) {
-        sequencerPlayPosition = 0;
+      if (currentSequencePosition > sequencesLength[currentSequencePosition]) {
+        currentSequencePosition = 0;
       }
-      triggerBeatOff = millis() + 10;
+
+      if (sequences[currentSequence][currentSequencePosition]) {
+        triggerSequencerBeat();
+      }
+      currentSequencePosition++;
+
       lastMillis = millis();
     }
   }
 }
 
+void triggerSequencerBeat() {
+  Serial.println("Seq Beat");
+  digitalWrite(digitalBeatPin, HIGH);
+  
+  analogWrite(analogProgrammerValuePin, sequencer[sequencerPlayPosition]);
+  sequencerPlayPosition++;
+  if (sequencerPlayPosition > sequencerProgramHighestPosition) {
+    sequencerPlayPosition = 0;
+  }
+  if (triggerBeatOff < 0) {
+    triggerBeatOff = millis() + 10;  
+  }
+  
+}
+
 void triggerMetronomeBeatOff() {
   if (triggerBeatOff > -1 && triggerBeatOff < millis()) {
-    digitalWrite(digitalBeatPin, LOW); 
+    Serial.println("beat off");
     triggerBeatOff = -1;
+    digitalWrite(digitalBeatPin, LOW);
   }
 }
