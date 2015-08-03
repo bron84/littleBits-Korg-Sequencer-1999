@@ -22,10 +22,25 @@ int sequencerProgramHighestPosition;
 int sequencerPlayPosition;
 boolean resetSequencerOnNextProgram = false;
 
+int currentSequence = 0;
+int currentSequenceAnalog;
+boolean currentSequenceCanTrack = false;
+int currentSequencePosition = 0;
+int sequences[5][16] = {
+  {1},
+  {1, 1, 1, 0},
+  {1, 0, 1, 0},
+  {1, 1, 0, 1, 1},
+  {1, 1, 1, 0, 1, 1, 0}
+};
+int sequencesLength[5] = {1, 4, 4, 5, 7};
+int numberOfSequences = 5;
+
+
 boolean metronomePlaying = false;
 boolean metronomeCanTrack = false;
 int metronomeMSAnalog;
-unsigned long metronomeMS = 500;
+unsigned long metronomeMS = 1000;
 unsigned long lastMillis;
 unsigned long triggerBeatOff;
 
@@ -64,6 +79,8 @@ void stateButtonHandler() {
       }
       if (stateButtonValue == 3) {
           metronomeCanTrack = false;
+      } else if (stateButtonValue == 2) {
+          currentSequenceCanTrack = false;
       }
       
     }
@@ -109,7 +126,9 @@ void stateValueHandler() {
 
   if (stateButtonValue == 3) {
     metronomeSpeed();
-  }   
+  } else if (stateButtonValue == 2) {
+    sequenceNumber();
+  }
 }
 
 void metronomeSpeed() {
@@ -120,12 +139,23 @@ void metronomeSpeed() {
 
   if (metronomeCanTrack) {
     metronomeMSAnalog = programmerValue;
-    metronomeMS = map(metronomeMSAnalog, 0, 1023, 1000, 100);
+    metronomeMS = map(metronomeMSAnalog, 0, 1023, 1000, 20);
+  }
+}
+
+void sequenceNumber() {
+  int diff = abs(currentSequenceAnalog - programmerValue);
+  if (diff < 20) {
+    currentSequenceCanTrack = true;
+  }
+  
+  if (currentSequenceCanTrack) {
+    currentSequenceAnalog = programmerValue;
+    currentSequence = map(currentSequenceAnalog, 0, 1020, 0, numberOfSequences - 1); 
   }
 }
 
 void metronomeToggle() {
-  Serial.println("toggle metronome");
   metronomePlaying = !metronomePlaying;
   lastMillis = millis() - metronomeMS;
 }
@@ -134,6 +164,22 @@ void triggerMetronome() {
   if (metronomePlaying) {
     int diffMillis = millis() - lastMillis;
     if (diffMillis > metronomeMS) {
+      if (currentSequencePosition >= sequencesLength[currentSequence]) {
+        currentSequencePosition = 0;
+      }
+
+      if (sequences[currentSequence][currentSequencePosition]) {
+        Serial.println("trigger step");
+        triggerSequencerBeat();
+      }
+      currentSequencePosition++;
+
+      lastMillis = millis();
+    }
+  }
+}
+
+void triggerSequencerBeat() {
       digitalWrite(digitalBeatPin, HIGH);
 
       analogWrite(analogProgrammerValuePin, sequencer[sequencerPlayPosition]);
@@ -141,11 +187,9 @@ void triggerMetronome() {
       if (sequencerPlayPosition > sequencerProgramHighestPosition) {
         sequencerPlayPosition = 0;
       }
-      triggerBeatOff = millis() + 10;
-      lastMillis = millis();
-    }
-  }
+      triggerBeatOff = millis() + 10;  
 }
+  
 
 void triggerMetronomeBeatOff() {
   
