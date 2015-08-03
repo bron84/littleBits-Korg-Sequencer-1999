@@ -177,16 +177,15 @@ void triggerMetronome() {
       if (currentSequencePosition[0] >= sequencesLength[currentSequence[0]]) {
         currentSequencePosition[0] = 0;
       }
-
       if (sequences[currentSequence[0]][currentSequencePosition[0]]) {
         triggerSequencerBeat();
       }
       currentSequencePosition[0]++;
 
+
       if (currentSequencePosition[1] >= sequencesLength[currentSequence[1]]) {
         currentSequencePosition[1] = 0;
       }
-
       if (sequences[currentSequence[1]][currentSequencePosition[1]]) {
         digitalWrite(digitalBeatPin, HIGH);
         triggerBeatOff = millis() + 10;  
@@ -199,19 +198,14 @@ void triggerMetronome() {
 }
 
 void triggerSequencerBeat() {
-      
-
-      analogWrite(analogProgrammerValuePin, sequencer[sequencerPlayPosition]);
-      sequencerPlayPosition++;
-      if (sequencerPlayPosition > sequencerProgramHighestPosition) {
-        sequencerPlayPosition = 0;
-      }
-      
+  analogWrite(analogProgrammerValuePin, sequencer[sequencerPlayPosition]);
+  sequencerPlayPosition++;
+  if (sequencerPlayPosition > sequencerProgramHighestPosition) {
+    sequencerPlayPosition = 0;
+  }
 }
-  
 
 void triggerMetronomeBeatOff() {
-  
   if (triggerBeatOff > 0 && triggerBeatOff < millis()) {
     digitalWrite(digitalBeatPin, LOW); 
     triggerBeatOff = 0;
